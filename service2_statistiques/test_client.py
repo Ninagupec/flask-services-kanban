@@ -52,6 +52,13 @@ class TestService2(unittest.TestCase):
         self.assertEqual(r.status_code, 400)
         self.assertIn("erreur", r.json())
 
+    def test_correlation_serie_constante(self):
+        # Fix #20 : une serie constante doit renvoyer 400, pas un JSON avec NaN
+        donnees = {"x": [1, 2, 3, 4, 5], "y": [7, 7, 7, 7, 7]}
+        r = requests.post(f"{BASE}/stats/correlation", json=donnees)
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("variance nulle", r.json()["erreur"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

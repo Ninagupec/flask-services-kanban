@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Service 1 - Client de test (matrices)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    fieldset { margin-bottom: 1.2rem; border: 1px solid #ccc; border-radius: 8px; }
+    legend { font-weight: 600; padding: 0 .4rem; }
+    label { display: block; margin: .3rem 0 .1rem; font-size: .9rem; }
+    input { width: 100%; padding: .4rem; box-sizing: border-box; }
+    button { margin-top: .6rem; padding: .45rem .9rem; cursor: pointer; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: .8rem; border-radius: 6px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Service 1 — Calculs matriciels</h1>
+  <p>Chaque formulaire envoie une requête <code>fetch</code> POST en JSON et affiche la réponse.</p>
+
+  <fieldset>
+    <legend>POST /matrices/add</legend>
+    <label>Matrice A (JSON)</label>
+    <input id="add_A" value="[[1,2],[3,4]]">
+    <label>Matrice B (JSON)</label>
+    <input id="add_B" value="[[5,6],[7,8]]">
+    <button onclick="appel('/matrices/add', {A: J('add_A'), B: J('add_B')}, 'add_out')">Calculer</button>
+    <pre id="add_out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>POST /matrices/multiply</legend>
+    <label>Matrice A (JSON)</label>
+    <input id="mul_A" value="[[1,2],[3,4]]">
+    <label>Matrice B (JSON)</label>
+    <input id="mul_B" value="[[5,6],[7,8]]">
+    <button onclick="appel('/matrices/multiply', {A: J('mul_A'), B: J('mul_B')}, 'mul_out')">Calculer</button>
+    <pre id="mul_out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>POST /matrices/transpose</legend>
+    <label>Matrice A (JSON)</label>
+    <input id="tr_A" value="[[1,2,3],[4,5,6]]">
+    <button onclick="appel('/matrices/transpose', {A: J('tr_A')}, 'tr_out')">Calculer</button>
+    <pre id="tr_out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>POST /matrices/determinant</legend>
+    <label>Matrice A (JSON)</label>
+    <input id="det_A" value="[[1,2],[3,4]]">
+    <button onclick="appel('/matrices/determinant', {A: J('det_A')}, 'det_out')">Calculer</button>
+    <pre id="det_out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>POST /matrices/inverse</legend>
+    <label>Matrice A (JSON)</label>
+    <input id="inv_A" value="[[4,7],[2,6]]">
+    <button onclick="appel('/matrices/inverse', {A: J('inv_A')}, 'inv_out')">Calculer</button>
+    <pre id="inv_out">—</pre>
+  </fieldset>
+
+  <script>
+    function J(id) { return JSON.parse(document.getElementById(id).value); }
+    async function appel(route, corps, sortie) {
+      const out = document.getElementById(sortie);
+      try {
+        const rep = await fetch(route, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(corps)
+        });
+        const json = await rep.json();
+        out.textContent = 'HTTP ' + rep.status + '\n' + JSON.stringify(json, null, 2);
+      } catch (e) {
+        out.textContent = 'Erreur : ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>

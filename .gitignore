@@ -1,0 +1,27 @@
+# Environnements virtuels Python
+venv/
+env/
+.venv/
+
+# Fichiers de configuration sensibles
+.env
+*.env
+
+# Fichiers Python compiles
+__pycache__/
+*.pyc
+*.pyo
+
+# Bibliotheques C compilees (Service 5 : recompiler avec compile.sh)
+*.so
+*.dylib
+*.dll
+
+# Fichiers d'editeur
+.vscode/
+.idea/
+*.swp
+
+# Fichiers systeme
+.DS_Store
+Thumbs.db

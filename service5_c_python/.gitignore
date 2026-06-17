@@ -1,0 +1,5 @@
+lib/*.so
+lib/*.dylib
+lib/*.dll
+venv/
+__pycache__/

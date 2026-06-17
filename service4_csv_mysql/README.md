@@ -8,7 +8,7 @@ API REST Flask qui charge un fichier CSV dans la table MySQL `donnees`. Fournit 
 cd service4_csv_mysql
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env      # puis renseigner DB_USER / DB_PASSWORD
+# créer un fichier .env avec DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME
 python app.py             # http://localhost:5004
 ```
 

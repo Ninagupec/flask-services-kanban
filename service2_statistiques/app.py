@@ -126,21 +126,6 @@ def test_student():
         return jsonify({'erreur': str(e)}), 400
 
 
-@app.route('/', methods=['GET'])
-def index():
-    """Page d'accueil : liste les routes disponibles."""
-    return jsonify({
-        'service': 'Service 2 - Fonctions statistiques',
-        'routes': [
-            'POST /stats/describe',
-            'POST /stats/correlation',
-            'POST /stats/test_normalite',
-            'POST /stats/test_student',
-        ],
-        'client_test': 'GET /client',
-    })
-
-
 @app.route('/client', methods=['GET'])
 def client():
     """Sert le client de test HTML (meme origine -> pas de souci CORS)."""

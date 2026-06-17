@@ -44,7 +44,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Chaque service expose `GET /` (liste des routes) et `GET /client` (client de test HTML). Voir le `README.md` de chaque service pour le détail des routes et des exemples `curl`.
+Chaque service expose `GET /client` (client de test HTML). Voir le `README.md` de chaque service pour le détail des routes et des exemples `curl`.
 
 ## Base de données MySQL (Services 3 & 4)
 
@@ -52,7 +52,7 @@ Chaque service expose `GET /` (liste des routes) et `GET /client` (client de tes
 mysql -u root < sql/init_db.sql          # crée la base flask_stats + la table donnees
 ```
 
-Les identifiants sont lus depuis un fichier `.env` (jamais committé — voir `.gitignore`) ; un modèle est fourni dans chaque service concerné (`.env.example`).
+Les identifiants sont lus depuis un fichier `.env` (jamais committé — voir `.gitignore`). Variables attendues : `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
 
 ## Tests de la partie client
 

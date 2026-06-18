@@ -74,5 +74,50 @@ def correlation():
         return jsonify({'erreur': str(e)}), 400
 
 
+@app.route('/stats/test_normalite', methods=['POST'])
+def test_normalite():
+    """Test de Shapiro-Wilk : la serie suit-elle une loi normale ?"""
+    data = request.get_json(silent=True)
+    try:
+        values = validate_data(data)
+        if len(values) > 5000:
+            return jsonify({'erreur': 'Shapiro-Wilk limite a 5000 valeurs'}), 400
+        stat, p_value = stats.shapiro(values)
+        return jsonify({
+            'operation': 'test_normalite_shapiro_wilk',
+            'resultat': {
+                'statistique': round(float(stat), 6),
+                'p_value': round(float(p_value), 6),
+                'est_normale': bool(p_value > 0.05),
+                'interpretation': (
+                    'Distribution normale (p > 0.05)' if p_value > 0.05
+                    else 'Distribution non normale (p <= 0.05)'
+                ),
+            },
+        })
+    except (ValueError, TypeError) as e:
+        return jsonify({'erreur': str(e)}), 400
+
+
+@app.route('/stats/test_student', methods=['POST'])
+def test_student():
+    """Test t de Student : compare les moyennes de deux groupes independants."""
+    data = request.get_json(silent=True)
+    try:
+        groupe1 = validate_data(data, 'groupe1')
+        groupe2 = validate_data(data, 'groupe2')
+        t_stat, p_value = stats.ttest_ind(groupe1, groupe2)
+        return jsonify({
+            'operation': 'test_t_student',
+            'resultat': {
+                't_statistique': round(float(t_stat), 4),
+                'p_value': round(float(p_value), 6),
+                'difference_significative': bool(p_value < 0.05),
+            },
+        })
+    except (ValueError, TypeError) as e:
+        return jsonify({'erreur': str(e)}), 400
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5002)

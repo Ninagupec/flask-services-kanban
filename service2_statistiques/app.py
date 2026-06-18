@@ -4,11 +4,13 @@ API REST Flask qui calcule des statistiques sur des series de nombres
 envoyees en JSON. Utilise NumPy et SciPy.
 """
 
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, send_from_directory
 import numpy as np
 from scipy import stats
 
 app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def validate_data(data, key='data'):
@@ -117,6 +119,27 @@ def test_student():
         })
     except (ValueError, TypeError) as e:
         return jsonify({'erreur': str(e)}), 400
+
+
+@app.route('/', methods=['GET'])
+def index():
+    """Page d'accueil : liste les routes disponibles."""
+    return jsonify({
+        'service': 'Service 2 - Fonctions statistiques',
+        'routes': [
+            'POST /stats/describe',
+            'POST /stats/correlation',
+            'POST /stats/test_normalite',
+            'POST /stats/test_student',
+        ],
+        'client_test': 'GET /client',
+    })
+
+
+@app.route('/client', methods=['GET'])
+def client():
+    """Sert le client de test HTML (meme origine -> pas de souci CORS)."""
+    return send_from_directory(BASE_DIR, 'test_client.html')
 
 
 if __name__ == '__main__':

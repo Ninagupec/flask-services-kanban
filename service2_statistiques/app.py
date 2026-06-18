@@ -46,5 +46,33 @@ def describe():
         return jsonify({'erreur': str(e)}), 400
 
 
+@app.route('/stats/correlation', methods=['POST'])
+def correlation():
+    """Coefficient de correlation de Pearson entre deux series x et y."""
+    data = request.get_json(silent=True)
+    try:
+        x = validate_data(data, 'x')
+        y = validate_data(data, 'y')
+        if len(x) != len(y):
+            return jsonify({'erreur': 'x et y doivent avoir la meme longueur'}), 400
+        r, p_value = stats.pearsonr(x, y)
+        interpretation = (
+            'forte' if abs(r) > 0.7
+            else 'moderee' if abs(r) > 0.4
+            else 'faible'
+        )
+        return jsonify({
+            'operation': 'correlation_pearson',
+            'resultat': {
+                'r': round(float(r), 4),
+                'p_value': round(float(p_value), 6),
+                'interpretation': interpretation,
+                'significatif': bool(p_value < 0.05),
+            },
+        })
+    except (ValueError, TypeError) as e:
+        return jsonify({'erreur': str(e)}), 400
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5002)

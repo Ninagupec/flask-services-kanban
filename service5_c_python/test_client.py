@@ -4,13 +4,16 @@ Prerequis : ./compile.sh puis python app.py (port 5005).
 Puis : python test_client.py
 """
 
-import unittest
-import requests
+import unittest          # framework de tests integre a Python
+import requests          # pour envoyer de vraies requetes HTTP au service
 
+# 127.0.0.1 (IPv4) plutot que "localhost" : evite le souci localhost/IPv6.
+# NB : il faut avoir compile la bibliotheque C (compile.sh / compile.bat) avant.
 BASE = "http://127.0.0.1:5005"
-DATA = [12.5, 15.3, 8.7, 21.0, 13.2, 9.8, 17.6, 11.4]
+DATA = [12.5, 15.3, 8.7, 21.0, 13.2, 9.8, 17.6, 11.4]   # jeu de valeurs reutilise par les tests
 
 
+# Verifie que le service repond avant de lancer les tests (sinon arret clair).
 def setUpModule():
     """Verifie que le service est bien demarre avant de lancer les tests."""
     try:

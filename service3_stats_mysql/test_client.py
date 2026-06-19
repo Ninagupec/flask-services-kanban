@@ -5,12 +5,15 @@ fichier .env configure. Lancer le service (python app.py, port 5003),
 puis : python test_client.py
 """
 
-import unittest
-import requests
+import unittest          # framework de tests integre a Python
+import requests          # pour envoyer de vraies requetes HTTP au service
 
+# 127.0.0.1 (IPv4) plutot que "localhost" : evite le souci localhost/IPv6.
+# NB : ce service lit en base -> MySQL doit tourner et la base etre initialisee.
 BASE = "http://127.0.0.1:5003"
 
 
+# Verifie que le service repond avant de lancer les tests (sinon arret clair).
 def setUpModule():
     """Verifie que le service est bien demarre avant de lancer les tests."""
     try:

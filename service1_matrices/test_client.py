@@ -5,12 +5,17 @@ terminal : python test_client.py
 Utilise le module unittest pour verifier chaque route.
 """
 
-import unittest
-import requests
+import unittest          # framework de tests integre a Python (TestCase, asserts)
+import requests          # pour envoyer de vraies requetes HTTP au service en marche
 
+# Adresse du service a tester. 127.0.0.1 (IPv4) plutot que "localhost" : evite le
+# cas ou localhost part en IPv6 (::1) alors que Flask ecoute en IPv4.
 BASE = "http://127.0.0.1:5001"
 
 
+# setUpModule() est appelee UNE fois par unittest avant tous les tests.
+# Ici on verifie que le service repond ; sinon on arrete avec un message clair
+# (plutot qu'une avalanche d'erreurs de connexion incomprehensibles).
 def setUpModule():
     """Verifie que le service est bien demarre avant de lancer les tests."""
     try:
@@ -23,13 +28,15 @@ def setUpModule():
         )
 
 
+# Chaque methode test_* est un test : on envoie une requete, puis on VERIFIE le
+# resultat avec assertEqual / assertIn / assertAlmostEqual (echoue si faux).
 class TestService1(unittest.TestCase):
 
     def test_add(self):
         donnees = {"A": [[1, 2], [3, 4]], "B": [[5, 6], [7, 8]]}
         r = requests.post(f"{BASE}/matrices/add", json=donnees)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()["resultat"], [[6.0, 8.0], [10.0, 12.0]])
+        self.assertEqual(r.status_code, 200)                 # la requete a reussi
+        self.assertEqual(r.json()["resultat"], [[6.0, 8.0], [10.0, 12.0]])  # bon resultat
 
     def test_multiply(self):
         donnees = {"A": [[1, 2], [3, 4]], "B": [[5, 6], [7, 8]]}

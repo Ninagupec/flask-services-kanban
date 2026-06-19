@@ -5,12 +5,15 @@ terminal : python test_client.py
 Utilise le module unittest pour verifier chaque route.
 """
 
-import unittest
-import requests
+import unittest          # framework de tests integre a Python (TestCase, asserts)
+import requests          # pour envoyer de vraies requetes HTTP au service en marche
 
+# 127.0.0.1 (IPv4) plutot que "localhost" : evite le souci localhost/IPv6.
 BASE = "http://127.0.0.1:5002"
 
 
+# Appelee une fois avant tous les tests : verifie que le service repond, sinon
+# arret immediat avec un message clair (au lieu d'erreurs de connexion en cascade).
 def setUpModule():
     """Verifie que le service est bien demarre avant de lancer les tests."""
     try:
@@ -23,6 +26,7 @@ def setUpModule():
         )
 
 
+# Chaque methode test_* envoie une requete et VERIFIE la reponse (code HTTP + contenu).
 class TestService2(unittest.TestCase):
 
     def test_describe(self):

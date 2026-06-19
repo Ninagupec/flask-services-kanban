@@ -5,11 +5,13 @@ fichier .env configure. Lancer le service (python app.py) sur le port
 5004, puis : python test_client.py
 """
 
-import io
-import unittest
-import requests
+import io                # pour simuler un fichier CSV en memoire (sans fichier disque)
+import unittest          # framework de tests integre a Python
+import requests          # pour envoyer de vraies requetes HTTP au service
 
+# 127.0.0.1 (IPv4) plutot que "localhost" : evite le souci localhost/IPv6.
 BASE = "http://127.0.0.1:5004"
+# Un petit CSV valide utilise par les tests d'upload (2 lignes correctes).
 CSV_VALIDE = (
     "nom_serie,valeur,categorie,date_mesure\n"
     "serie_test,10.0,cat,2024-02-01\n"
@@ -17,6 +19,7 @@ CSV_VALIDE = (
 )
 
 
+# Verifie que le service repond avant de lancer les tests (sinon arret clair).
 def setUpModule():
     """Verifie que le service est bien demarre avant de lancer les tests."""
     try:

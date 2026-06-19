@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Service 4 - Client de test (CSV -> MySQL)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    fieldset { margin-bottom: 1.2rem; border: 1px solid #ccc; border-radius: 8px; }
+    legend { font-weight: 600; padding: 0 .4rem; }
+    input, button { padding: .4rem; }
+    button { margin-top: .6rem; cursor: pointer; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: .8rem; border-radius: 6px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Service 4 — Chargement CSV vers MySQL</h1>
+
+  <fieldset>
+    <legend>POST /upload/csv</legend>
+    <label>Fichier CSV (colonnes : nom_serie, valeur, [categorie], [date_mesure])</label><br>
+    <input type="file" id="csv" accept=".csv"><br>
+    <button onclick="upload()">Charger dans MySQL</button>
+    <pre id="up_out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>GET /upload/series</legend>
+    <button onclick="series()">Lister les séries chargées</button>
+    <pre id="ls_out">—</pre>
+  </fieldset>
+
+  <script>
+    async function upload() {
+      const out = document.getElementById('up_out');
+      const f = document.getElementById('csv').files[0];
+      if (!f) { out.textContent = 'Choisissez un fichier .csv'; return; }
+      const fd = new FormData();
+      fd.append('file', f);
+      try {
+        const rep = await fetch('/upload/csv', { method: 'POST', body: fd });
+        const json = await rep.json();
+        out.textContent = 'HTTP ' + rep.status + '\n' + JSON.stringify(json, null, 2);
+      } catch (e) { out.textContent = 'Erreur : ' + e.message; }
+    }
+    async function series() {
+      const out = document.getElementById('ls_out');
+      try {
+        const rep = await fetch('/upload/series');
+        const json = await rep.json();
+        out.textContent = 'HTTP ' + rep.status + '\n' + JSON.stringify(json, null, 2);
+      } catch (e) { out.textContent = 'Erreur : ' + e.message; }
+    }
+  </script>
+</body>
+</html>

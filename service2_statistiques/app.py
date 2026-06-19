@@ -57,6 +57,11 @@ def correlation():
         y = validate_data(data, 'y')
         if len(x) != len(y):
             return jsonify({'erreur': 'x et y doivent avoir la meme longueur'}), 400
+        # Fix #20 : si une serie est constante (variance nulle), la correlation
+        # de Pearson est indefinie (division par zero -> NaN). NaN n'est pas du
+        # JSON valide, on renvoie donc une erreur 400 explicite.
+        if np.std(x) == 0 or np.std(y) == 0:
+            return jsonify({'erreur': 'correlation indefinie : variance nulle (serie constante)'}), 400
         r, p_value = stats.pearsonr(x, y)
         interpretation = (
             'forte' if abs(r) > 0.7

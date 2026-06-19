@@ -48,6 +48,23 @@ Chaque service expose `GET /client` (client de test HTML). Voir le `README.md` d
 
 ## Base de données MySQL (Services 3 & 4)
 
+**Méthode recommandée** — un seul script crée la base, la table, l'utilisateur applicatif et les fichiers `.env` :
+
+```bash
+chmod +x scripts/setup_mysql.sh
+./scripts/setup_mysql.sh
+```
+
+Le script est idempotent. Si le compte `root` a un mot de passe :
+
+```bash
+MYSQL_ADMIN_PASSWORD='monmdp' ./scripts/setup_mysql.sh
+```
+
+Variables surchargeables : `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `MYSQL_ADMIN`, `MYSQL_ADMIN_PASSWORD`.
+
+**Méthode manuelle** (équivalente) :
+
 ```bash
 mysql -u root < sql/init_db.sql          # crée la base flask_stats + la table donnees
 ```

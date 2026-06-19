@@ -67,7 +67,21 @@ Chaque service expose `GET /client` (client de test HTML, ouvrir `http://localho
 
 ## Base de données MySQL (Services 3 & 4)
 
-Un seul script crée la base, la table, l'utilisateur applicatif et les fichiers `.env`. Il est **idempotent** (relançable sans dupliquer les données).
+### ✅ Méthode recommandée — script Python (toutes plateformes)
+
+`scripts/setup.py` **démarre MySQL** (si besoin), crée la base + la table + l'utilisateur, et génère les `.env`. Il utilise `mysql-connector-python`, donc **aucun besoin du client `mysql` dans le PATH** (idéal sous Windows).
+
+```bash
+python scripts/setup.py
+# si le compte root a un mot de passe :
+python scripts/setup.py --admin-password monmdp
+```
+
+Sous Windows, `python` peut s'appeler `py`. Le script s'auto-installe `mysql-connector-python` s'il manque.
+
+### Alternative — scripts shell
+
+Un seul script crée la base, la table, l'utilisateur applicatif et les fichiers `.env`. Idempotent.
 
 **Linux / macOS :**
 ```bash
@@ -101,6 +115,15 @@ Les identifiants sont lus depuis un fichier `.env` (jamais committé — voir `.
 Chaque service fournit, après les tests `curl`/Postman :
 - un **client Python** `test_client.py` (tests unitaires `unittest`) ;
 - un **client web** `test_client.html` (formulaires `fetch` JSON), servi via `GET /client`.
+
+> **⚠️ Lancer les tests = 2 terminaux.** `test_client.py` interroge le serveur HTTP : il faut que **`python app.py` tourne déjà** dans un autre terminal (et, pour les services 3/4, que la base soit configurée via `scripts/setup.py`). Sinon le test affiche `[!] Service injoignable...`.
+>
+> ```
+> Terminal 1 :  cd serviceX_xxx && python app.py        # laisse tourner
+> Terminal 2 :  cd serviceX_xxx && python test_client.py
+> ```
+>
+> `requests` (utilisé par les tests) est dans chaque `requirements.txt` : pense à faire `pip install -r requirements.txt` dans le venv activé.
 
 ## Workflow Git du groupe
 

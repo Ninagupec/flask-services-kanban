@@ -8,7 +8,19 @@ puis : python test_client.py
 import unittest
 import requests
 
-BASE = "http://localhost:5003"
+BASE = "http://127.0.0.1:5003"
+
+
+def setUpModule():
+    """Verifie que le service est bien demarre avant de lancer les tests."""
+    try:
+        requests.get(BASE, timeout=3)
+    except requests.exceptions.RequestException:
+        raise SystemExit(
+            "[!] Service injoignable sur " + BASE
+            + " -- ouvre un AUTRE terminal, active le venv, lance 'python app.py'"
+            + " (laisse-le tourner), puis relance ici : python test_client.py"
+        )
 
 
 class TestService3(unittest.TestCase):

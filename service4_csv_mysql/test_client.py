@@ -9,12 +9,24 @@ import io
 import unittest
 import requests
 
-BASE = "http://localhost:5004"
+BASE = "http://127.0.0.1:5004"
 CSV_VALIDE = (
     "nom_serie,valeur,categorie,date_mesure\n"
     "serie_test,10.0,cat,2024-02-01\n"
     "serie_test,20.0,cat,2024-02-02\n"
 )
+
+
+def setUpModule():
+    """Verifie que le service est bien demarre avant de lancer les tests."""
+    try:
+        requests.get(BASE, timeout=3)
+    except requests.exceptions.RequestException:
+        raise SystemExit(
+            "[!] Service injoignable sur " + BASE
+            + " -- ouvre un AUTRE terminal, active le venv, lance 'python app.py'"
+            + " (laisse-le tourner), puis relance ici : python test_client.py"
+        )
 
 
 class TestService4(unittest.TestCase):

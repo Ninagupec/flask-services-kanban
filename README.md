@@ -87,6 +87,8 @@ python scripts/setup.py --admin-password monmdp
 
 Sous Windows, `python` peut s'appeler `py`. Le script s'auto-installe `mysql-connector-python` s'il manque. (L'**installation** de MySQL — étape 1 — peut demander une élévation UAC ; la création de l'instance locale, elle, n'en demande pas.)
 
+> **MySQL reste allumé** une fois lancé : le script ne l'éteint jamais, `mysqld` tourne jusqu'à ce que tu fermes/redémarres le PC. **Après un redémarrage**, relance simplement `python scripts/setup.py` — c'est instantané (la base existe déjà, il ne fait que redémarrer le serveur). Si un service (3 ou 4) répond « Erreur base de données », c'est que MySQL n'est pas lancé : relance `setup.py`.
+
 ### Alternative — scripts shell
 
 Un seul script crée la base, la table, l'utilisateur applicatif et les fichiers `.env`. Idempotent.

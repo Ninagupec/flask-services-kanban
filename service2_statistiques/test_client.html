@@ -16,7 +16,7 @@
 </head>
 <body>
   <h1>Client de test — Service 2 (Fonctions statistiques)</h1>
-  <p>Le service doit tourner sur <code>http://localhost:5002</code>.</p>
+  <p>Ouvrir cette page via <code>http://127.0.0.1:5002/</code> (servie par le service, pas en double-cliquant le fichier).</p>
 
   <fieldset>
     <legend>1. Description statistique — POST /stats/describe</legend>
@@ -55,7 +55,9 @@
   </fieldset>
 
   <script>
-    const BASE = "http://localhost:5002";
+    // URL relative (meme origine que la page servie via /client) : evite tout
+    // souci CORS / localhost vs 127.0.0.1 / IPv6 sous Windows.
+    const BASE = "";
     const nums = (id) => document.getElementById(id).value.split(",").map(v => parseFloat(v.trim()));
     const show = (id, data) => document.getElementById(id).textContent = JSON.stringify(data, null, 2);
 

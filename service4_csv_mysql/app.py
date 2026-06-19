@@ -126,16 +126,6 @@ def list_series():
         return jsonify({'erreur': 'Erreur base de donnees', 'detail': str(e)}), 500
 
 
-@app.route('/', methods=['GET'])
-def index():
-    """Page d'accueil : liste les routes disponibles."""
-    return jsonify({
-        'service': 'Service 4 - Chargement CSV vers MySQL',
-        'routes': ['POST /upload/csv', 'GET /upload/series'],
-        'client_test': 'GET /client',
-    })
-
-
 @app.route('/client', methods=['GET'])
 def client():
     """Sert le client de test HTML (meme origine -> pas de souci CORS)."""

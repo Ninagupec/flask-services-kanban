@@ -7,11 +7,6 @@ env/
 .env
 *.env
 
-# Base SQLite locale (generee automatiquement)
-*.db
-*.sqlite
-*.sqlite3
-
 # Fichiers Python compiles
 __pycache__/
 *.pyc

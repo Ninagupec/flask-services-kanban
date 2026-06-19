@@ -2,10 +2,11 @@
 """Configuration tout-en-un du projet (cross-platform : Windows / macOS / Linux).
 
 Ce script :
-  1. demarre le serveur MySQL s'il ne tourne pas deja (best effort selon l'OS) ;
-  2. cree la base flask_stats + la table donnees (via sql/init_db.sql, idempotent) ;
-  3. cree l'utilisateur applicatif et lui donne les droits ;
-  4. genere les fichiers .env des services 3 et 4.
+  1. installe MySQL s'il est absent (winget / brew / apt selon l'OS) ;
+  2. lance le serveur mysqld s'il ne tourne pas deja ;
+  3. cree la base flask_stats + la table donnees (via sql/init_db.sql, idempotent) ;
+  4. cree l'utilisateur applicatif et lui donne les droits ;
+  5. genere les fichiers .env des services 3 et 4.
 
 Il utilise mysql-connector-python (et NON le client 'mysql' en ligne de commande),
 donc aucun besoin d'avoir 'mysql' dans le PATH — ideal sous Windows.
@@ -91,7 +92,7 @@ def installer_mysql():
     """Tente d'installer MySQL via le gestionnaire de paquets de l'OS.
 
     Best effort : peut demander une elevation (admin/UAC/sudo) et telecharger
-    plusieurs centaines de Mo. En cas d'echec, on conseille SQLite (zero install).
+    plusieurs centaines de Mo.
     """
     systeme = platform.system()
     print("[i] MySQL introuvable -> tentative d'installation automatique...")
@@ -106,7 +107,6 @@ def installer_mysql():
         else:
             print("    [!] Ni winget ni choco trouves.")
             print("        Installe MySQL : https://dev.mysql.com/downloads/installer/")
-            print("        OU utilise SQLite (aucune install) : python scripts/setup.py --engine sqlite")
             return False
     elif systeme == "Darwin":
         if shutil.which("brew"):
@@ -183,19 +183,15 @@ def executer_sql_fichier(cursor, chemin):
         cursor.execute(instruction)
 
 
-def ecrire_env(engine, args):
-    """Ecrit le .env des services 3 et 4 (fins de ligne LF)."""
-    if engine == "mysql":
-        contenu = (
-            "DB_ENGINE=mysql\n"
-            f"DB_HOST={args.host}\n"
-            f"DB_PORT={args.port}\n"
-            f"DB_USER={args.db_user}\n"
-            f"DB_PASSWORD={args.db_password}\n"
-            f"DB_NAME={args.db_name}\n"
-        )
-    else:
-        contenu = "DB_ENGINE=sqlite\n"
+def ecrire_env(args):
+    """Ecrit le .env MySQL des services 3 et 4 (fins de ligne LF)."""
+    contenu = (
+        f"DB_HOST={args.host}\n"
+        f"DB_PORT={args.port}\n"
+        f"DB_USER={args.db_user}\n"
+        f"DB_PASSWORD={args.db_password}\n"
+        f"DB_NAME={args.db_name}\n"
+    )
     for svc in SERVICES_AVEC_ENV:
         with open(ROOT / svc / ".env", "w", encoding="utf-8", newline="\n") as fh:
             fh.write(contenu)
@@ -211,9 +207,8 @@ def etapes_suivantes():
 
 
 def main():
-    p = argparse.ArgumentParser(description="Setup base de donnees + .env (cross-platform).")
-    p.add_argument("--engine", choices=["sqlite", "mysql"], default="sqlite",
-                   help="moteur de base : sqlite (defaut, zero install) ou mysql")
+    p = argparse.ArgumentParser(
+        description="Installe, demarre et configure MySQL + .env (cross-platform).")
     p.add_argument("--admin-user", default="root")
     p.add_argument("--admin-password", default=None)
     p.add_argument("--db-name", default="flask_stats")
@@ -225,16 +220,6 @@ def main():
                    help="ne pas tenter de demarrer/installer MySQL automatiquement")
     args = p.parse_args()
 
-    # --- Moteur SQLite : aucune installation, la base s'auto-cree -------------
-    if args.engine == "sqlite":
-        print("==> Moteur SQLite (zero installation, 100% Python).")
-        ecrire_env("sqlite", args)
-        print("La base data/flask_stats.db se cree automatiquement au premier")
-        print("lancement des services 3 et 4 (jeu de donnees d'exemple inclus).")
-        etapes_suivantes()
-        return
-
-    # --- Moteur MySQL : serveur a demarrer/installer -------------------------
     connector = importer_connector()
 
     print("==> Connexion au serveur MySQL...")
@@ -264,7 +249,7 @@ def main():
     conn.commit()
 
     print("==> [3/3] Generation des fichiers .env (services 3 et 4)...")
-    ecrire_env("mysql", args)
+    ecrire_env(args)
 
     # Verification finale
     cursor.execute(f"USE `{args.db_name}`")

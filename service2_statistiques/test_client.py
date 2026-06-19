@@ -30,16 +30,21 @@ def setUpModule():
 class TestService2(unittest.TestCase):
 
     def test_describe(self):
+        """Verifie /stats/describe : on envoie 8 valeurs et on controle que la
+        reponse est correcte (code 200, n=8, et la bonne moyenne/min/max)."""
         donnees = {"data": [12.5, 15.3, 8.7, 21.0, 13.2, 9.8, 17.6, 11.4]}
         r = requests.post(f"{BASE}/stats/describe", json=donnees)
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)            # la requete a reussi
         res = r.json()["resultat"]
-        self.assertEqual(res["n"], 8)
+        self.assertEqual(res["n"], 8)                   # bien 8 valeurs comptees
+        # assertAlmostEqual : compare des nombres a virgule a 3 decimales pres.
         self.assertAlmostEqual(res["moyenne"], 13.6875, places=3)
         self.assertEqual(res["minimum"], 8.7)
         self.assertEqual(res["maximum"], 21.0)
 
     def test_correlation(self):
+        """Verifie /stats/correlation : y = 2*x donc lien parfait -> r doit
+        valoir 1.0, l'interpretation 'forte' et le resultat significatif."""
         donnees = {"x": [1, 2, 3, 4, 5], "y": [2, 4, 6, 8, 10]}
         r = requests.post(f"{BASE}/stats/correlation", json=donnees)
         self.assertEqual(r.status_code, 200)
@@ -50,12 +55,16 @@ class TestService2(unittest.TestCase):
         self.assertTrue(res["significatif"])
 
     def test_test_normalite(self):
+        """Verifie /stats/test_normalite : la reponse doit contenir le champ
+        'est_normale' (resultat du test de Shapiro-Wilk)."""
         donnees = {"data": [2.1, 2.4, 2.0, 2.6, 2.3, 2.5, 2.2, 2.4, 2.1, 2.3]}
         r = requests.post(f"{BASE}/stats/test_normalite", json=donnees)
         self.assertEqual(r.status_code, 200)
         self.assertIn("est_normale", r.json()["resultat"])
 
     def test_test_student(self):
+        """Verifie /stats/test_student : deux groupes de moyennes tres
+        differentes (~21 vs ~31) -> la difference doit etre significative."""
         donnees = {"groupe1": [20, 22, 19, 24, 21], "groupe2": [30, 32, 29, 34, 31]}
         r = requests.post(f"{BASE}/stats/test_student", json=donnees)
         self.assertEqual(r.status_code, 200)
@@ -64,11 +73,15 @@ class TestService2(unittest.TestCase):
         self.assertTrue(res["difference_significative"])
 
     def test_erreur_donnees_manquantes(self):
+        """Verifie la GESTION D'ERREUR : une liste d'1 seule valeur est invalide
+        (il en faut au moins 2) -> le service doit repondre 400 + un message."""
         r = requests.post(f"{BASE}/stats/describe", json={"data": [1]})
         self.assertEqual(r.status_code, 400)
         self.assertIn("erreur", r.json())
 
     def test_correlation_serie_constante(self):
+        """Verifie le cas piege : si une serie est constante (y = 7,7,7...), la
+        correlation est indefinie -> le service doit renvoyer 400 (pas un NaN)."""
         # Fix #20 : une serie constante doit renvoyer 400, pas un JSON avec NaN
         donnees = {"x": [1, 2, 3, 4, 5], "y": [7, 7, 7, 7, 7]}
         r = requests.post(f"{BASE}/stats/correlation", json=donnees)

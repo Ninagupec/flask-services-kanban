@@ -13,6 +13,7 @@ import mysql.connector
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory
 
+# Charge les variables définies dans .env
 load_dotenv()
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +21,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COLONNES_REQUISES = {'nom_serie', 'valeur'}
 COLONNES_VALIDES = {'nom_serie', 'valeur', 'categorie', 'date_mesure'}
 TAILLE_MAX_OCTETS = 5 * 1024 * 1024  # 5 Mo
-
 
 def get_connection():
     """Connexion MySQL a partir des variables d'environnement (.env)."""
@@ -31,7 +31,6 @@ def get_connection():
         password=os.getenv('DB_PASSWORD'),
         database=os.getenv('DB_NAME', 'flask_stats'),
     )
-
 
 @app.route('/upload/csv', methods=['POST'])
 def upload_csv():
@@ -55,6 +54,8 @@ def upload_csv():
         return jsonify({'erreur': f'Lecture CSV impossible : {e}'}), 400
 
     # 3. Colonnes obligatoires
+    # set(df.columns) : Ensemble des noms de colonnes du CSV.
+    # COLONNES_REQUISES - set(df.columns) : Calcul des colonnes obligatoires qui ne sont pas présentes.
     colonnes_manquantes = COLONNES_REQUISES - set(df.columns)
     if colonnes_manquantes:
         return jsonify({
@@ -64,21 +65,32 @@ def upload_csv():
 
     # 4. Nettoyage : ne garder que les colonnes valides, valeurs numeriques
     df = df[[c for c in df.columns if c in COLONNES_VALIDES]]
+    # pd.to_numeric : Convertit la colonne valeur en nombres.
+    # errors='coerce' : Si une valeur n’est pas convertible, elle devient NaN (valeur manquante).
     df['valeur'] = pd.to_numeric(df['valeur'], errors='coerce')
+    # lignes_invalides : Nombre de lignes qui seront ignorées.
     lignes_invalides = int(df['valeur'].isna().sum())
+    # dropna(subset=['valeur']) : Supprime les lignes où valeur est NaN.
     df = df.dropna(subset=['valeur'])
     if df.empty:
         return jsonify({'erreur': 'Aucune ligne valide dans le CSV'}), 400
 
+    # Booléen indiquant si la colonne categorie existe.
     a_categorie = 'categorie' in df.columns
+    # Booléen indiquant si la colonne date_mesure existe.
     a_date = 'date_mesure' in df.columns
 
     # 5. Insertion MySQL
     try:
+        # Ouvre une connexion à la base MySQL.
         conn = get_connection()
+        # Crée un curseur pour exécuter des requêtes SQL.
         cursor = conn.cursor()
+        # Compteur de lignes insérées.
         insertions = 0
+        # Parcourt chaque ligne du DataFrame.
         for _, row in df.iterrows():
+            # Exécute une requête INSERT
             cursor.execute(
                 'INSERT INTO donnees (nom_serie, valeur, categorie, date_mesure)'
                 ' VALUES (%s, %s, %s, %s)',
@@ -101,6 +113,7 @@ def upload_csv():
         'lignes_inserees': insertions,
         'lignes_invalides_ignorees': lignes_invalides,
         'message': f'{insertions} ligne(s) chargee(s) dans la table donnees',
+    # Code HTTP 201 : Création réussie.
     }), 201
 
 
@@ -117,6 +130,7 @@ def list_series():
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
+        # Transforme chaque ligne SQL (r) en dict
         series = [
             {'serie': r[0], 'n_points': r[1], 'debut': str(r[2]), 'fin': str(r[3])}
             for r in rows
@@ -125,12 +139,10 @@ def list_series():
     except Exception as e:
         return jsonify({'erreur': 'Erreur base de donnees', 'detail': str(e)}), 500
 
-
 @app.route('/client', methods=['GET'])
 def client():
     """Sert le client de test HTML (meme origine -> pas de souci CORS)."""
     return send_from_directory(BASE_DIR, 'test_client.html')
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5004)

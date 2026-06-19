@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Service 3 - Client de test (stats depuis MySQL)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    fieldset { margin-bottom: 1.2rem; border: 1px solid #ccc; border-radius: 8px; }
+    legend { font-weight: 600; padding: 0 .4rem; }
+    label { display: block; margin: .3rem 0 .1rem; font-size: .9rem; }
+    input { width: 100%; padding: .4rem; box-sizing: border-box; }
+    button { margin-top: .6rem; padding: .45rem .9rem; cursor: pointer; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: .8rem; border-radius: 6px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Service 3 — Statistiques depuis MySQL</h1>
+
+  <fieldset>
+    <legend>GET /db/stats/describe</legend>
+    <label>Série</label>
+    <input id="serie" value="serie_A">
+    <button onclick="describe()">Décrire (depuis MySQL)</button>
+    <pre id="d_out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>GET /db/stats/correlation</legend>
+    <label>serie_x</label>
+    <input id="sx" value="serie_A">
+    <label>serie_y</label>
+    <input id="sy" value="serie_B">
+    <button onclick="correlation()">Corréler</button>
+    <pre id="c_out">—</pre>
+  </fieldset>
+
+  <script>
+    async function get(url, sortie) {
+      const out = document.getElementById(sortie);
+      try {
+        const rep = await fetch(url);
+        const json = await rep.json();
+        out.textContent = 'HTTP ' + rep.status + '\n' + JSON.stringify(json, null, 2);
+      } catch (e) { out.textContent = 'Erreur : ' + e.message; }
+    }
+    function describe() {
+      const s = encodeURIComponent(document.getElementById('serie').value);
+      get('/db/stats/describe?serie=' + s, 'd_out');
+    }
+    function correlation() {
+      const x = encodeURIComponent(document.getElementById('sx').value);
+      const y = encodeURIComponent(document.getElementById('sy').value);
+      get('/db/stats/correlation?serie_x=' + x + '&serie_y=' + y, 'c_out');
+    }
+  </script>
+</body>
+</html>

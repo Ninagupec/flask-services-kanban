@@ -21,8 +21,10 @@ Options : --admin-user (def root) --admin-password --db-name (def flask_stats)
 """
 import argparse
 import getpass
+import glob
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -45,37 +47,44 @@ def importer_connector():
         return __import__("mysql.connector", fromlist=["connector"])
 
 
-# --- Demarrage du serveur MySQL selon l'OS -----------------------------------
-def tenter_demarrage_mysql():
+# --- Lancement direct du binaire mysqld (pas de service persistant) ----------
+def trouver_mysqld():
+    """Localise l'executable mysqld (PATH, puis emplacements d'installation usuels)."""
+    nom = "mysqld.exe" if platform.system() == "Windows" else "mysqld"
+    chemin = shutil.which(nom) or shutil.which("mysqld")
+    if chemin:
+        return chemin
+    candidats = []
     systeme = platform.system()
-    print(f"[i] Tentative de demarrage du serveur MySQL ({systeme})...")
     if systeme == "Windows":
-        # Le nom du service depend de la version installee
-        for service in ("MySQL", "MySQL80", "MySQL84", "MySQL90", "MariaDB"):
-            r = subprocess.run(["net", "start", service],
-                               capture_output=True, text=True)
-            sortie = (r.stdout + r.stderr).lower()
-            if r.returncode == 0 or "demarre" in sortie or "started" in sortie \
-                    or "deja" in sortie or "already" in sortie:
-                print(f"    service '{service}' OK")
-                return
-        print("    [!] Impossible de demarrer automatiquement (droits admin requis).")
-        print("        Demarre MySQL a la main : Win+R -> services.msc -> MySQL -> Demarrer")
-        print("        (ou lance ce terminal en tant qu'administrateur).")
+        for base in (r"C:\Program Files\MySQL", r"C:\Program Files (x86)\MySQL"):
+            candidats += glob.glob(base + r"\MySQL Server *\bin\mysqld.exe")
     elif systeme == "Darwin":
-        for cmd in (["brew", "services", "start", "mysql"], ["mysql.server", "start"]):
-            if subprocess.run(cmd, capture_output=True, text=True).returncode == 0:
-                print(f"    {' '.join(cmd)} OK")
-                return
-        print("    [!] Demarrage auto impossible. Essaie : brew services start mysql")
+        candidats += ["/opt/homebrew/opt/mysql/bin/mysqld",
+                      "/usr/local/opt/mysql/bin/mysqld",
+                      "/usr/local/mysql/bin/mysqld"]
     else:  # Linux
-        for cmd in (["sudo", "systemctl", "start", "mysql"],
-                    ["sudo", "systemctl", "start", "mariadb"],
-                    ["sudo", "service", "mysql", "start"]):
-            if subprocess.run(cmd, capture_output=True, text=True).returncode == 0:
-                print(f"    {' '.join(cmd)} OK")
-                return
-        print("    [!] Demarrage auto impossible. Essaie : sudo systemctl start mysql")
+        candidats += ["/usr/sbin/mysqld", "/usr/libexec/mysqld", "/usr/bin/mysqld"]
+    for c in candidats:
+        if Path(c).exists():
+            return c
+    return None
+
+
+def lancer_mysqld():
+    """Lance mysqld directement comme simple processus (non persistant)."""
+    chemin = trouver_mysqld()
+    if not chemin:
+        print("    [!] Executable 'mysqld' introuvable.")
+        print("        Demarre MySQL a la main, puis relance ce script.")
+        return None
+    print(f"[i] Lancement de mysqld : {chemin}")
+    try:
+        subprocess.Popen([chemin],
+                         stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"    [!] Echec du lancement de mysqld : {e}")
 
 
 def connecter_admin(connector, args, demarrer=True):
@@ -98,9 +107,9 @@ def connecter_admin(connector, args, demarrer=True):
                 continue
             break  # autre erreur (serveur pas joignable) -> on sort de la boucle
 
-    # 2) le serveur n'est probablement pas demarre
+    # 2) le serveur n'est probablement pas demarre -> on lance mysqld directement
     if demarrer:
-        tenter_demarrage_mysql()
+        lancer_mysqld()
         print("[i] Attente du serveur MySQL...")
         for _ in range(20):
             try:

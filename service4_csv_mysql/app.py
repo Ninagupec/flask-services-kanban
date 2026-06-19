@@ -97,8 +97,8 @@ def upload_csv():
                 (
                     str(row['nom_serie']),
                     float(row['valeur']),
-                    str(row['categorie']) if a_categorie else None,
-                    str(row['date_mesure']) if a_date else None,
+                    str(row['categorie']) if a_categorie and pd.notna(row['categorie']) else None,
+                    str(row['date_mesure']) if a_date and pd.notna(row['date_mesure']) else None,
                 ),
             )
             insertions += 1

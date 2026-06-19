@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Service 2 — Client de test des statistiques</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    fieldset { border: 1px solid #ccc; border-radius: 8px; margin-bottom: 1.2rem; }
+    legend { font-weight: bold; padding: 0 .4rem; }
+    label { display: block; margin: .3rem 0 .1rem; font-size: .9rem; }
+    input { width: 100%; padding: .4rem; box-sizing: border-box; }
+    button { margin-top: .6rem; padding: .5rem 1rem; cursor: pointer; }
+    pre { background: #0d1117; color: #c9d1d9; padding: .8rem; border-radius: 6px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Client de test — Service 2 (Fonctions statistiques)</h1>
+  <p>Le service doit tourner sur <code>http://localhost:5002</code>.</p>
+
+  <fieldset>
+    <legend>1. Description statistique — POST /stats/describe</legend>
+    <label>data (nombres separes par des virgules)</label>
+    <input id="describe-data" value="12.5, 15.3, 8.7, 21.0, 13.2, 9.8, 17.6, 11.4">
+    <button onclick="describe()">Calculer</button>
+    <pre id="describe-out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>2. Correlation de Pearson — POST /stats/correlation</legend>
+    <label>x</label>
+    <input id="corr-x" value="1, 2, 3, 4, 5">
+    <label>y</label>
+    <input id="corr-y" value="2, 4, 6, 8, 10">
+    <button onclick="correlation()">Calculer</button>
+    <pre id="corr-out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>3. Test de normalite (Shapiro-Wilk) — POST /stats/test_normalite</legend>
+    <label>data</label>
+    <input id="norm-data" value="2.1, 2.4, 2.0, 2.6, 2.3, 2.5, 2.2, 2.4, 2.1, 2.3">
+    <button onclick="normalite()">Tester</button>
+    <pre id="norm-out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>4. Test t de Student — POST /stats/test_student</legend>
+    <label>groupe1</label>
+    <input id="stu-g1" value="20, 22, 19, 24, 21">
+    <label>groupe2</label>
+    <input id="stu-g2" value="30, 32, 29, 34, 31">
+    <button onclick="student()">Comparer</button>
+    <pre id="stu-out">—</pre>
+  </fieldset>
+
+  <script>
+    const BASE = "http://localhost:5002";
+    const nums = (id) => document.getElementById(id).value.split(",").map(v => parseFloat(v.trim()));
+    const show = (id, data) => document.getElementById(id).textContent = JSON.stringify(data, null, 2);
+
+    async function post(route, body, outId) {
+      try {
+        const r = await fetch(BASE + route, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        show(outId, await r.json());
+      } catch (e) {
+        show(outId, { erreur: "Service injoignable : " + e.message });
+      }
+    }
+
+    const describe    = () => post("/stats/describe", { data: nums("describe-data") }, "describe-out");
+    const correlation = () => post("/stats/correlation", { x: nums("corr-x"), y: nums("corr-y") }, "corr-out");
+    const normalite   = () => post("/stats/test_normalite", { data: nums("norm-data") }, "norm-out");
+    const student     = () => post("/stats/test_student", { groupe1: nums("stu-g1"), groupe2: nums("stu-g2") }, "stu-out");
+
+    // Auto-execution de tous les tests si l'URL contient ?auto (utile pour captures)
+    if (location.search.includes('auto')) {
+      window.addEventListener('load', () => setTimeout(() => {
+        describe(); correlation(); normalite(); student();
+      }, 150));
+    }
+  </script>
+</body>
+</html>

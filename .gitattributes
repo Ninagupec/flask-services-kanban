@@ -1,0 +1,20 @@
+# Normalisation des fins de ligne (évite que Windows casse les scripts bash)
+* text=auto
+
+# Scripts/fichiers qui DOIVENT rester en LF (sinon "bad interpreter" sous bash)
+*.sh   text eol=lf
+*.py   text eol=lf
+*.sql  text eol=lf
+*.md   text eol=lf
+*.csv  text eol=lf
+*.html text eol=lf
+
+# Scripts Windows : CRLF
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binaires (jamais de conversion de fins de ligne)
+*.dll  binary
+*.so   binary
+*.dylib binary
+*.o    binary

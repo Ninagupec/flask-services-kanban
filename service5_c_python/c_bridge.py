@@ -19,9 +19,12 @@ elif platform.system() == 'Windows':
 _lib_path = os.path.join(os.path.dirname(__file__), 'lib', f'stats{_ext}')
 
 if not os.path.exists(_lib_path):
+    if platform.system() == 'Windows':
+        _hint = 'Executez : compile.bat (ou "bash compile.sh" sous Git Bash/WSL/MSYS2)'
+    else:
+        _hint = 'Executez : ./compile.sh'
     raise FileNotFoundError(
-        f'Bibliotheque C introuvable : {_lib_path}\n'
-        'Executez ./compile.sh pour compiler src/stats.c'
+        f'Bibliotheque C introuvable : {_lib_path}\n{_hint}'
     )
 
 _lib = ctypes.CDLL(_lib_path)

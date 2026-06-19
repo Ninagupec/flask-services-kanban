@@ -4,15 +4,31 @@ Service Flask qui expose en REST des fonctions de calcul statistique **écrites 
 
 ## Compilation puis lancement
 
+**Prérequis : `gcc` doit être installé.**
+- Linux : `sudo apt install gcc`
+- macOS : `xcode-select --install`
+- Windows : installer **MinGW-w64** (https://www.mingw-w64.org) ou **MSYS2** (`pacman -S gcc`), puis ajouter le dossier `bin\` (contenant `gcc.exe`) au PATH.
+
+**Linux / macOS :**
 ```bash
 cd service5_c_python
-chmod +x compile.sh && ./compile.sh      # génère lib/stats.dylib (.so sous Linux, .dll sous Windows)
-python -m venv venv && source venv/bin/activate
+chmod +x compile.sh && ./compile.sh        # génère lib/stats.dylib (macOS) ou lib/stats.so (Linux)
+python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-python app.py                            # http://localhost:5005
+python app.py                              # http://localhost:5005
 ```
 
-> `compile.sh` détecte l'OS : `-dynamiclib` + `.dylib` sous macOS, `-shared` + `.so`/`.dll` ailleurs. La bibliothèque compilée (`lib/*.dylib|so|dll`) **n'est pas versionnée** (voir `.gitignore`) — chaque développeur la recompile.
+**Windows (PowerShell ou CMD) :**
+```bat
+cd service5_c_python
+compile.bat                                 :: génère lib\stats.dll (gcc MinGW)
+python -m venv venv & venv\Scripts\activate
+pip install -r requirements.txt
+python app.py                               :: http://localhost:5005
+```
+> Si tu disposes de Git Bash / WSL / MSYS2 sous Windows, `bash compile.sh` fonctionne aussi (il détecte MinGW et produit `lib\stats.dll`).
+
+> Détection d'OS : `compile.sh` choisit `-dynamiclib`+`.dylib` (macOS), `-shared`+`.so` (Linux), `-shared`+`.dll` (Windows/MinGW, sans `-fPIC` ni `-lm`). La bibliothèque compilée (`lib/*.dylib|so|dll`) **n'est pas versionnée** (voir `.gitignore`) — chaque développeur la recompile.
 
 ## Routes disponibles
 

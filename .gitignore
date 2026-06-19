@@ -12,10 +12,13 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Bibliotheques C compilees (Service 5 : recompiler avec compile.sh)
+# Bibliotheques C compilees (Service 5 : recompiler avec compile.sh / compile.bat)
 *.so
 *.dylib
 *.dll
+*.o
+*.obj
+build/
 
 # Fichiers d'editeur
 .vscode/

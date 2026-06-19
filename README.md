@@ -37,37 +37,62 @@ flask-services-kanban/
 
 ## Démarrer un service
 
+**Linux / macOS :**
 ```bash
 cd serviceX_xxx
-python -m venv venv && source venv/bin/activate   # Windows : venv\Scripts\activate
+python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 python app.py
 ```
 
-Chaque service expose `GET /client` (client de test HTML). Voir le `README.md` de chaque service pour le détail des routes et des exemples `curl`.
+**Windows (PowerShell) :**
+```powershell
+cd serviceX_xxx
+python -m venv venv ; .\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python app.py
+```
+
+**Windows (CMD) :**
+```bat
+cd serviceX_xxx
+python -m venv venv && venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+```
+
+Chaque service expose `GET /client` (client de test HTML, ouvrir `http://localhost:PORT/`). Voir le `README.md` de chaque service pour le détail des routes et des exemples `curl`.
+
+> **Windows — bon à savoir :** dans PowerShell, `curl` est un alias d'`Invoke-WebRequest` (pas le vrai curl) et les guillemets simples ne délimitent pas le JSON comme sous bash. Pour tester, ouvre plutôt la page `/client` dans le navigateur, ou utilise Postman, ou installe le vrai `curl.exe` (via `winget install curl` / Git for Windows).
 
 ## Base de données MySQL (Services 3 & 4)
 
-**Méthode recommandée** — un seul script crée la base, la table, l'utilisateur applicatif et les fichiers `.env` :
+Un seul script crée la base, la table, l'utilisateur applicatif et les fichiers `.env`. Il est **idempotent** (relançable sans dupliquer les données).
 
+**Linux / macOS :**
 ```bash
 chmod +x scripts/setup_mysql.sh
 ./scripts/setup_mysql.sh
-```
-
-Le script est idempotent. Si le compte `root` a un mot de passe :
-
-```bash
+# si root a un mot de passe :
 MYSQL_ADMIN_PASSWORD='monmdp' ./scripts/setup_mysql.sh
 ```
 
-Variables surchargeables : `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `MYSQL_ADMIN`, `MYSQL_ADMIN_PASSWORD`.
-
-**Méthode manuelle** (équivalente) :
-
-```bash
-mysql -u root < sql/init_db.sql          # crée la base flask_stats + la table donnees
+**Windows (PowerShell) :**
+```powershell
+.\scripts\setup_mysql.ps1
+# si root a un mot de passe :
+.\scripts\setup_mysql.ps1 -MysqlAdminPassword 'monmdp'
+# si l'execution de scripts est bloquee :
+powershell -ExecutionPolicy Bypass -File .\scripts\setup_mysql.ps1
 ```
+(ou double-clic sur `scripts\setup_mysql.bat`)
+
+> **Windows — prérequis :** le client `mysql.exe` doit être dans le PATH. L'installateur MySQL ne l'ajoute pas toujours ; au besoin :
+> `setx PATH "%PATH%;C:\Program Files\MySQL\MySQL Server 8.0\bin"` puis rouvrir le terminal.
+
+Variables surchargeables (bash : `VAR=...`, PowerShell : `-Param ...`) : `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `MYSQL_ADMIN`, `MYSQL_ADMIN_PASSWORD`.
+
+**Méthode manuelle** (équivalente) : `mysql -u root < sql/init_db.sql`, puis créer un `.env` dans `service3_stats_mysql/` et `service4_csv_mysql/`.
 
 Les identifiants sont lus depuis un fichier `.env` (jamais committé — voir `.gitignore`). Variables attendues : `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
 

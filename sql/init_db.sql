@@ -15,14 +15,19 @@ CREATE TABLE IF NOT EXISTS donnees (
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Donnees de test initiales
-INSERT INTO donnees (nom_serie, valeur, categorie, date_mesure) VALUES
-  ('serie_A', 12.50, 'temp', '2024-01-15'),
-  ('serie_A', 15.30, 'temp', '2024-01-16'),
-  ('serie_A', 8.70,  'temp', '2024-01-17'),
-  ('serie_A', 21.00, 'temp', '2024-01-18'),
-  ('serie_A', 13.20, 'temp', '2024-01-19'),
-  ('serie_B', 45.10, 'pression', '2024-01-15'),
-  ('serie_B', 52.80, 'pression', '2024-01-16'),
-  ('serie_B', 48.60, 'pression', '2024-01-17'),
-  ('serie_B', 55.20, 'pression', '2024-01-18');
+-- Donnees de test initiales.
+-- Inserees UNIQUEMENT si la table est vide -> script idempotent : on peut le
+-- relancer sans dupliquer les donnees et sans ecraser ce qui a ete charge.
+INSERT INTO donnees (nom_serie, valeur, categorie, date_mesure)
+SELECT * FROM (
+  SELECT 'serie_A' AS nom_serie, 12.50 AS valeur, 'temperature' AS categorie, '2024-01-15' AS date_mesure
+  UNION ALL SELECT 'serie_A', 15.30, 'temperature', '2024-01-16'
+  UNION ALL SELECT 'serie_A',  8.70, 'temperature', '2024-01-17'
+  UNION ALL SELECT 'serie_A', 21.00, 'temperature', '2024-01-18'
+  UNION ALL SELECT 'serie_A', 13.20, 'temperature', '2024-01-19'
+  UNION ALL SELECT 'serie_B', 45.10, 'pression', '2024-01-15'
+  UNION ALL SELECT 'serie_B', 52.80, 'pression', '2024-01-16'
+  UNION ALL SELECT 'serie_B', 48.60, 'pression', '2024-01-17'
+  UNION ALL SELECT 'serie_B', 55.20, 'pression', '2024-01-18'
+) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM donnees);

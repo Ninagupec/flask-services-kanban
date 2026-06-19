@@ -65,21 +65,33 @@ Chaque service expose `GET /client` (client de test HTML, ouvrir `http://localho
 
 > **Windows — bon à savoir :** dans PowerShell, `curl` est un alias d'`Invoke-WebRequest` (pas le vrai curl) et les guillemets simples ne délimitent pas le JSON comme sous bash. Pour tester, ouvre plutôt la page `/client` dans le navigateur, ou utilise Postman, ou installe le vrai `curl.exe` (via `winget install curl` / Git for Windows).
 
-## Base de données MySQL (Services 3 & 4)
+## Base de données (Services 3 & 4)
 
-### ✅ Méthode recommandée — script Python (toutes plateformes)
+Deux moteurs possibles, choisis par la variable `DB_ENGINE` (dans le `.env`) :
 
-`scripts/setup.py` **démarre MySQL** (si besoin), crée la base + la table + l'utilisateur, et génère les `.env`. Il utilise `mysql-connector-python`, donc **aucun besoin du client `mysql` dans le PATH** (idéal sous Windows).
+### ✅ Par défaut : SQLite — ZÉRO installation (recommandé pour développer)
+
+SQLite est inclus dans Python. **Rien à installer, aucun serveur à lancer** : la base `data/flask_stats.db` (avec un jeu de données d'exemple) se **crée automatiquement** au premier lancement des services 3 et 4. Ça marche immédiatement sur tous les PC (Windows compris) avec juste Python.
 
 ```bash
-python scripts/setup.py
-# si le compte root a un mot de passe :
-python scripts/setup.py --admin-password monmdp
+python scripts/setup.py        # écrit DB_ENGINE=sqlite (optionnel : c'est déjà le défaut)
 ```
 
-Sous Windows, `python` peut s'appeler `py`. Le script s'auto-installe `mysql-connector-python` s'il manque.
+Concrètement, un collègue n'a qu'à : `pip install -r requirements.txt` puis `python app.py`. C'est tout.
 
-### Alternative — scripts shell
+### 🛢️ Option : MySQL — conforme au sujet du TP (pour la démo notée)
+
+`scripts/setup.py --engine mysql` **installe MySQL s'il est absent** (winget sous Windows, brew sous macOS, apt sous Linux), le **démarre**, crée la base + table + utilisateur, et génère les `.env`. Il utilise `mysql-connector-python` (pas besoin du client `mysql` dans le PATH).
+
+```bash
+python scripts/setup.py --engine mysql
+# si le compte root a un mot de passe :
+python scripts/setup.py --engine mysql --admin-password monmdp
+```
+
+> L'installation auto de MySQL peut demander une élévation (UAC/admin) et télécharger plusieurs centaines de Mo. Si elle échoue, installe MySQL à la main puis relance — ou reste sur SQLite.
+
+### Alternative — scripts shell (MySQL uniquement)
 
 Un seul script crée la base, la table, l'utilisateur applicatif et les fichiers `.env`. Idempotent.
 

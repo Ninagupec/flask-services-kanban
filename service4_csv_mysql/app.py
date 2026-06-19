@@ -9,28 +9,17 @@ import io
 import os
 
 import pandas as pd
-import mysql.connector
-from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory
 
-# Charge les variables définies dans .env
-load_dotenv()
+# Acces base : SQLite (defaut, zero install) ou MySQL selon DB_ENGINE (voir db.py)
+from db import get_connection, PLACEHOLDER
+
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 COLONNES_REQUISES = {'nom_serie', 'valeur'}
 COLONNES_VALIDES = {'nom_serie', 'valeur', 'categorie', 'date_mesure'}
 TAILLE_MAX_OCTETS = 5 * 1024 * 1024  # 5 Mo
-
-def get_connection():
-    """Connexion MySQL a partir des variables d'environnement (.env)."""
-    return mysql.connector.connect(
-        host=os.getenv('DB_HOST', 'localhost'),
-        port=int(os.getenv('DB_PORT', 3306)),
-        user=os.getenv('DB_USER'),
-        password=os.getenv('DB_PASSWORD'),
-        database=os.getenv('DB_NAME', 'flask_stats'),
-    )
 
 @app.route('/upload/csv', methods=['POST'])
 def upload_csv():
@@ -93,7 +82,7 @@ def upload_csv():
             # Exécute une requête INSERT
             cursor.execute(
                 'INSERT INTO donnees (nom_serie, valeur, categorie, date_mesure)'
-                ' VALUES (%s, %s, %s, %s)',
+                ' VALUES (%s, %s, %s, %s)'.replace('%s', PLACEHOLDER),
                 (
                     str(row['nom_serie']),
                     float(row['valeur']),

@@ -11,7 +11,7 @@ import numpy as np
 from scipy import stats
 from flask import Flask, request, jsonify, send_from_directory
 
-from db import fetch_series
+from db import fetch_series, DB_ENGINE
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,7 +34,7 @@ def db_describe():
             'minimum': round(float(np.min(values)), 4),
             'maximum': round(float(np.max(values)), 4),
         }
-        return jsonify({'source': 'mysql', 'resultat': result})
+        return jsonify({'source': DB_ENGINE, 'resultat': result})
     except ValueError as e:
         return jsonify({'erreur': str(e)}), 404
     except Exception as e:
@@ -57,7 +57,7 @@ def db_correlation():
             return jsonify({'erreur': 'correlation indefinie : variance nulle (serie constante)'}), 400
         r, p_value = stats.pearsonr(x, y)
         return jsonify({
-            'source': 'mysql',
+            'source': DB_ENGINE,
             'series': {'x': serie_x, 'y': serie_y, 'n_points': n},
             'resultat': {
                 'r': round(float(r), 4),

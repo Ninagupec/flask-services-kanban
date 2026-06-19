@@ -87,6 +87,47 @@ def lancer_mysqld():
         print(f"    [!] Echec du lancement de mysqld : {e}")
 
 
+def installer_mysql():
+    """Tente d'installer MySQL via le gestionnaire de paquets de l'OS.
+
+    Best effort : peut demander une elevation (admin/UAC/sudo) et telecharger
+    plusieurs centaines de Mo. En cas d'echec, on conseille SQLite (zero install).
+    """
+    systeme = platform.system()
+    print("[i] MySQL introuvable -> tentative d'installation automatique...")
+    if systeme == "Windows":
+        if shutil.which("winget"):
+            print("    winget install Oracle.MySQL (peut ouvrir une fenetre UAC)...")
+            subprocess.run(["winget", "install", "--id", "Oracle.MySQL", "-e",
+                            "--accept-package-agreements",
+                            "--accept-source-agreements"])
+        elif shutil.which("choco"):
+            subprocess.run(["choco", "install", "mysql", "-y"])
+        else:
+            print("    [!] Ni winget ni choco trouves.")
+            print("        Installe MySQL : https://dev.mysql.com/downloads/installer/")
+            print("        OU utilise SQLite (aucune install) : python scripts/setup.py --engine sqlite")
+            return False
+    elif systeme == "Darwin":
+        if shutil.which("brew"):
+            subprocess.run(["brew", "install", "mysql"])
+        else:
+            print("    [!] Homebrew absent (https://brew.sh), puis : brew install mysql")
+            return False
+    else:  # Linux
+        if shutil.which("apt-get"):
+            subprocess.run(["sudo", "apt-get", "update"])
+            subprocess.run(["sudo", "apt-get", "install", "-y", "mysql-server"])
+        elif shutil.which("dnf"):
+            subprocess.run(["sudo", "dnf", "install", "-y", "mysql-server"])
+        else:
+            print("    [!] Gestionnaire de paquets non reconnu (installe mysql-server a la main).")
+            return False
+    ok = trouver_mysqld() is not None
+    print("    installation reussie." if ok else "    [!] mysqld toujours introuvable apres installation.")
+    return ok
+
+
 def connecter_admin(connector, args, demarrer=True):
     """Retourne une connexion admin, en demarrant MySQL au besoin."""
     def essayer(mot_de_passe):
@@ -107,8 +148,10 @@ def connecter_admin(connector, args, demarrer=True):
                 continue
             break  # autre erreur (serveur pas joignable) -> on sort de la boucle
 
-    # 2) le serveur n'est probablement pas demarre -> on lance mysqld directement
+    # 2) le serveur n'est probablement pas demarre -> installer si besoin, puis lancer
     if demarrer:
+        if trouver_mysqld() is None:
+            installer_mysql()
         lancer_mysqld()
         print("[i] Attente du serveur MySQL...")
         for _ in range(20):
@@ -140,8 +183,37 @@ def executer_sql_fichier(cursor, chemin):
         cursor.execute(instruction)
 
 
+def ecrire_env(engine, args):
+    """Ecrit le .env des services 3 et 4 (fins de ligne LF)."""
+    if engine == "mysql":
+        contenu = (
+            "DB_ENGINE=mysql\n"
+            f"DB_HOST={args.host}\n"
+            f"DB_PORT={args.port}\n"
+            f"DB_USER={args.db_user}\n"
+            f"DB_PASSWORD={args.db_password}\n"
+            f"DB_NAME={args.db_name}\n"
+        )
+    else:
+        contenu = "DB_ENGINE=sqlite\n"
+    for svc in SERVICES_AVEC_ENV:
+        with open(ROOT / svc / ".env", "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(contenu)
+        print(f"    ecrit : {svc}/.env")
+
+
+def etapes_suivantes():
+    print("\nEtapes suivantes (dans chaque service a tester) :")
+    print("    python -m venv venv")
+    print("    Windows : venv\\Scripts\\activate      |  macOS/Linux : source venv/bin/activate")
+    print("    pip install -r requirements.txt")
+    print("    python app.py        # puis, dans un AUTRE terminal : python test_client.py")
+
+
 def main():
-    p = argparse.ArgumentParser(description="Setup MySQL + .env (cross-platform).")
+    p = argparse.ArgumentParser(description="Setup base de donnees + .env (cross-platform).")
+    p.add_argument("--engine", choices=["sqlite", "mysql"], default="sqlite",
+                   help="moteur de base : sqlite (defaut, zero install) ou mysql")
     p.add_argument("--admin-user", default="root")
     p.add_argument("--admin-password", default=None)
     p.add_argument("--db-name", default="flask_stats")
@@ -150,9 +222,19 @@ def main():
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", default="3306")
     p.add_argument("--no-start", action="store_true",
-                   help="ne pas tenter de demarrer MySQL automatiquement")
+                   help="ne pas tenter de demarrer/installer MySQL automatiquement")
     args = p.parse_args()
 
+    # --- Moteur SQLite : aucune installation, la base s'auto-cree -------------
+    if args.engine == "sqlite":
+        print("==> Moteur SQLite (zero installation, 100% Python).")
+        ecrire_env("sqlite", args)
+        print("La base data/flask_stats.db se cree automatiquement au premier")
+        print("lancement des services 3 et 4 (jeu de donnees d'exemple inclus).")
+        etapes_suivantes()
+        return
+
+    # --- Moteur MySQL : serveur a demarrer/installer -------------------------
     connector = importer_connector()
 
     print("==> Connexion au serveur MySQL...")
@@ -182,19 +264,7 @@ def main():
     conn.commit()
 
     print("==> [3/3] Generation des fichiers .env (services 3 et 4)...")
-    contenu = (
-        f"DB_HOST={args.host}\n"
-        f"DB_PORT={args.port}\n"
-        f"DB_USER={args.db_user}\n"
-        f"DB_PASSWORD={args.db_password}\n"
-        f"DB_NAME={args.db_name}\n"
-    )
-    for svc in SERVICES_AVEC_ENV:
-        chemin = ROOT / svc / ".env"
-        # newline="\n" -> force des fins de ligne LF meme sous Windows (compatible 3.9+)
-        with open(chemin, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(contenu)
-        print(f"    ecrit : {svc}/.env")
+    ecrire_env("mysql", args)
 
     # Verification finale
     cursor.execute(f"USE `{args.db_name}`")
@@ -207,12 +277,8 @@ def main():
     for nom, n in lignes:
         print(f"    {nom} : {n} points")
 
-    print(f"\nTermine. La base '{args.db_name}' est prete.")
-    print("Etapes suivantes (dans chaque service a tester) :")
-    print("    python -m venv venv")
-    print("    Windows : venv\\Scripts\\activate      |  macOS/Linux : source venv/bin/activate")
-    print("    pip install -r requirements.txt")
-    print("    python app.py        # puis, dans un AUTRE terminal : python test_client.py")
+    print(f"\nTermine. La base MySQL '{args.db_name}' est prete.")
+    etapes_suivantes()
 
 
 if __name__ == "__main__":

@@ -71,6 +71,7 @@ def inverse_matrix():
         return jsonify({'erreur': str(e)}), 400
 
 
+@app.route('/', methods=['GET'])
 @app.route('/client', methods=['GET'])
 def client():
     """Sert le client de test HTML (meme origine -> pas de souci CORS)."""

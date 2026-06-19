@@ -99,6 +99,7 @@ def health():
     })
 
 
+@app.route('/', methods=['GET'])
 @app.route('/client', methods=['GET'])
 def client():
     return send_from_directory(BASE_DIR, 'test_client.html')

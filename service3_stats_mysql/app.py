@@ -71,6 +71,7 @@ def db_correlation():
         return jsonify({'erreur': 'Erreur base de donnees', 'detail': str(e)}), 500
 
 
+@app.route('/', methods=['GET'])
 @app.route('/client', methods=['GET'])
 def client():
     """Sert le client de test HTML (meme origine -> pas de souci CORS)."""

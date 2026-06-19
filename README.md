@@ -69,15 +69,23 @@ Chaque service expose `GET /client` (client de test HTML, ouvrir `http://localho
 
 ### ✅ Méthode recommandée — script Python (toutes plateformes)
 
-`scripts/setup.py` **installe MySQL s'il est absent** (winget sous Windows, brew sous macOS, apt sous Linux), **le démarre**, crée la base + la table + l'utilisateur, et génère les `.env`. Il utilise `mysql-connector-python`, donc **aucun besoin du client `mysql` dans le PATH** (idéal sous Windows).
-
 ```bash
 python scripts/setup.py
-# si le compte root a un mot de passe :
+```
+
+`scripts/setup.py` rend MySQL utilisable **sans configuration manuelle** :
+1. **installe MySQL** s'il est absent (winget / brew / apt) ;
+2. **crée et démarre une instance MySQL locale auto-suffisante** (dossier de données dédié, hors du dépôt) — **aucun droit admin, aucun service Windows, aucun `mysql` dans le PATH** ;
+3. crée la base + la table + l'utilisateur et génère les `.env`.
+
+C'est ce qui résout les soucis classiques sous Windows (« impossible de se connecter », « mysql introuvable dans le PATH ») : le script n'a besoin que du binaire `mysqld` et gère tout le reste lui-même.
+
+```bash
+# pour viser un MySQL existant protégé par mot de passe (au lieu de l'instance locale) :
 python scripts/setup.py --admin-password monmdp
 ```
 
-Sous Windows, `python` peut s'appeler `py`. Le script s'auto-installe `mysql-connector-python` s'il manque. L'installation de MySQL peut demander une élévation (UAC/admin).
+Sous Windows, `python` peut s'appeler `py`. Le script s'auto-installe `mysql-connector-python` s'il manque. (L'**installation** de MySQL — étape 1 — peut demander une élévation UAC ; la création de l'instance locale, elle, n'en demande pas.)
 
 ### Alternative — scripts shell
 

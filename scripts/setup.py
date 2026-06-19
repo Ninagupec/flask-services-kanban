@@ -28,12 +28,17 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SQL_FILE = ROOT / "sql" / "init_db.sql"
 SERVICES_AVEC_ENV = ["service3_stats_mysql", "service4_csv_mysql"]
+# Instance MySQL locale auto-suffisante (initialisee/demarree par ce script).
+# IMPORTANT : hors du depot, dans le dossier temp local -> jamais dans un
+# dossier synchronise (OneDrive/iCloud) qui corromprait les fichiers InnoDB.
+DATADIR = Path(tempfile.gettempdir()) / "flask_services_kanban_mysql"
 
 
 # --- mysql-connector-python : import, avec auto-installation si absent --------
@@ -72,20 +77,51 @@ def trouver_mysqld():
     return None
 
 
-def lancer_mysqld():
-    """Lance mysqld directement comme simple processus (non persistant)."""
-    chemin = trouver_mysqld()
-    if not chemin:
-        print("    [!] Executable 'mysqld' introuvable.")
-        print("        Demarre MySQL a la main, puis relance ce script.")
+def _datadir_initialise():
+    """Vrai si DATADIR contient deja une base MySQL initialisee."""
+    return (DATADIR / "mysql").is_dir()
+
+
+def bootstrap_mysql(port):
+    """Initialise (si besoin) et lance une instance MySQL LOCALE auto-suffisante.
+
+    N'a besoin que du binaire mysqld (installe par winget/brew/apt). Cree une
+    base de donnees dans <repo>/.mysql-data avec un compte root SANS mot de
+    passe -> aucune config systeme, aucun service, aucun droit admin requis.
+    """
+    mysqld = trouver_mysqld()
+    if not mysqld:
+        if not installer_mysql():
+            return None
+        mysqld = trouver_mysqld()
+    if not mysqld:
+        print("    [!] 'mysqld' introuvable meme apres installation.")
         return None
-    print(f"[i] Lancement de mysqld : {chemin}")
+
+    DATADIR.mkdir(parents=True, exist_ok=True)
+    log = DATADIR / "mysqld.log"
+
+    if not _datadir_initialise():
+        print(f"[i] Initialisation d'une base MySQL locale dans {DATADIR}...")
+        r = subprocess.run([mysqld, "--initialize-insecure",
+                            f"--datadir={DATADIR}"],
+                           cwd=str(DATADIR), capture_output=True, text=True)
+        if not _datadir_initialise():
+            print("    [!] Echec de l'initialisation MySQL :")
+            print("   ", (r.stderr or r.stdout).strip()[-500:])
+            return None
+
+    print(f"[i] Demarrage de mysqld (port {port})...")
     try:
-        subprocess.Popen([chemin],
-                         stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL)
+        with open(log, "ab") as fh:
+            subprocess.Popen(
+                [mysqld, f"--datadir={DATADIR}", f"--port={port}",
+                 "--bind-address=127.0.0.1", "--mysqlx=0"],
+                cwd=str(DATADIR), stdout=fh, stderr=fh)
     except Exception as e:
         print(f"    [!] Echec du lancement de mysqld : {e}")
+        return None
+    return mysqld
 
 
 def installer_mysql():
@@ -148,13 +184,11 @@ def connecter_admin(connector, args, demarrer=True):
                 continue
             break  # autre erreur (serveur pas joignable) -> on sort de la boucle
 
-    # 2) le serveur n'est probablement pas demarre -> installer si besoin, puis lancer
+    # 2) pas de serveur joignable -> on bootstrappe une instance MySQL locale
     if demarrer:
-        if trouver_mysqld() is None:
-            installer_mysql()
-        lancer_mysqld()
+        bootstrap_mysql(args.port)
         print("[i] Attente du serveur MySQL...")
-        for _ in range(20):
+        for _ in range(30):
             try:
                 return essayer(mdp if mdp is not None else "")
             except connector.Error as e:
@@ -167,9 +201,10 @@ def connecter_admin(connector, args, demarrer=True):
                 time.sleep(1)
 
     print("\n[ERREUR] Connexion a MySQL impossible.")
-    print("  - MySQL est-il installe et demarre ?")
+    print(f"  - voir le journal : {DATADIR / 'mysqld.log'}")
     print(f"  - hote/port corrects ? ({args.host}:{args.port})")
-    print("  - si root a un mot de passe : python scripts/setup.py --admin-password '...'")
+    print("  - si tu utilises un MySQL existant avec mot de passe root :")
+    print("        python scripts/setup.py --admin-password '...'")
     sys.exit(1)
 
 

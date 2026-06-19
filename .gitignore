@@ -7,6 +7,9 @@ env/
 .env
 *.env
 
+# Instance MySQL locale generee par scripts/setup.py
+.mysql-data/
+
 # Fichiers Python compiles
 __pycache__/
 *.pyc

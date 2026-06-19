@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Service 5 - Client de test (C via ctypes)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    fieldset { margin-bottom: 1.2rem; border: 1px solid #ccc; border-radius: 8px; }
+    legend { font-weight: 600; padding: 0 .4rem; }
+    label { display: block; margin: .3rem 0 .1rem; font-size: .9rem; }
+    input { width: 100%; padding: .4rem; box-sizing: border-box; }
+    button { margin-top: .6rem; padding: .45rem .9rem; cursor: pointer; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: .8rem; border-radius: 6px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Service 5 — Fonctions C via ctypes</h1>
+
+  <fieldset>
+    <legend>POST /c/stats/describe</legend>
+    <label>Données (JSON)</label>
+    <input id="d_data" value="[12.5,15.3,8.7,21.0,13.2,9.8,17.6,11.4]">
+    <button onclick="appel('/c/stats/describe', {data: J('d_data')}, 'd_out')">Calculer (moteur C)</button>
+    <pre id="d_out">—</pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>POST /c/stats/dot (produit scalaire)</legend>
+    <label>v1 (JSON)</label>
+    <input id="v1" value="[1,2,3]">
+    <label>v2 (JSON)</label>
+    <input id="v2" value="[4,5,6]">
+    <button onclick="appel('/c/stats/dot', {v1: J('v1'), v2: J('v2')}, 'dot_out')">Calculer</button>
+    <pre id="dot_out">—</pre>
+  </fieldset>
+
+  <script>
+    function J(id) { return JSON.parse(document.getElementById(id).value); }
+    async function appel(route, corps, sortie) {
+      const out = document.getElementById(sortie);
+      try {
+        const rep = await fetch(route, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(corps) });
+        const json = await rep.json();
+        out.textContent = 'HTTP ' + rep.status + '\n' + JSON.stringify(json, null, 2);
+      } catch (e) { out.textContent = 'Erreur : ' + e.message; }
+    }
+  </script>
+</body>
+</html>
